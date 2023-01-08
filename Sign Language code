@@ -110,9 +110,7 @@ while True:
                 letter.append("Q")
             if state=="10001":
                 letter.append("W")
-            if state=="01110":
-                letter.append("Y")
-            
+                
             
             #def letters with multiple conditions
             
@@ -165,10 +163,19 @@ while True:
                 else:
                     letter.append("C")
             
+            
+            #def letters with movements
+            
+            if state=="01110":
+                if substate=="CCCG" and word[len(word)-1]=="I":
+                    letter.append("J")
+                else:
+                    letter.append("Y")
+                    
+            
             #add letters into displayed list
             FiveLastAdd(letter,word)
             
-            #letters with movements
 
         #display letters
         for elem in word:
