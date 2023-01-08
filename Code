@@ -1,0 +1,183 @@
+import cv2
+import mediapipe as mp
+import sys
+
+cap = cv2.VideoCapture(0)
+
+#function to validate an element and add it to the right list
+def FiveLastAdd(List1,List2):
+    last=List1[len(List1)-1]
+    for elem in List1:
+        if last==(List1[len(List1)-2] and List1[len(List1)-3] and List1[len(List1)-4] and List1[len(List1)-5]) and last!=" ": 
+            if len(List2)>=4:
+                if last!=List2[len(List2)-1] and last!="":
+                    List2.append(last)
+            else:
+                List2.append(last)
+    return 
+
+#declare mediapipe object
+mp_Hands = mp.solutions.hands
+hands = mp_Hands.Hands()
+mpDraw = mp.solutions.drawing_utils
+
+#def fingers coord
+finger_Coord = [(8, 6), (12, 10), (16, 14), (20, 18)]
+thumb_Coord = (4,2)
+
+#def lists
+word=[" "," "," "," "]
+letter=[" "," "," "," "," "]
+substateList=[" "," "," "," "," "]
+
+#convert in RGB 
+while True:
+    success, image = cap.read()
+    RGB_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = hands.process(RGB_image)
+    multiLandMarks = results.multi_hand_landmarks
+    
+    #draw lines
+    if multiLandMarks:
+        handList = []
+        for handLms in multiLandMarks:
+            mpDraw.draw_landmarks(image, handLms, mp_Hands.HAND_CONNECTIONS)
+            for idx, lm in enumerate(handLms.landmark):
+                
+                #change hand point to pixel and coord
+                h, w, c = image.shape
+                cx, cy = int(lm.x * w), int(lm.y * h)
+                handList.append((cx, cy))
+            
+            for point in handList:
+                cv2.circle(image, point, 10, (255, 255, 0), cv2.FILLED)
+            
+            #def fingers states
+            state=""
+            if handList[thumb_Coord[0]][0]>handList[thumb_Coord[1]][0] :
+                state+="0"
+            else:
+                state+="1"
+            if handList[finger_Coord[0][0]][1]<handList[finger_Coord[0][1]][1] :
+                state+="0"
+            else:
+                state+="1"
+            if handList[finger_Coord[1][0]][1]<handList[finger_Coord[1][1]][1] :
+                state+="0"
+            else:
+                state+="1"
+            if handList[finger_Coord[2][0]][1]<handList[finger_Coord[2][1]][1] :
+                state+="0"
+            else:
+                state+="1"
+            if handList[finger_Coord[3][0]][1]<handList[finger_Coord[3][1]][1] :
+                state+="0"
+            else:
+                state+="1"
+                
+            #print(state)
+
+            #def substates
+            substate=""
+            n=0
+            for finger in finger_Coord:
+                n+=1
+                if state[n]=="0": #if open
+                    if handList[finger[0]][0]>(handList[finger[1]][0]+20):#left
+                        substate+="G"
+                    elif  handList[finger[0]][0]<(handList[finger[1]][0]-20):#right
+                        substate+="D"
+                    else:
+                        substate+="C"
+                else:
+                    substate+="C"
+                    
+            #print(substate) 
+            substateList.append(substate)
+            
+            
+            #def letters with 1 condition=state
+            
+            if state=="10000":
+                letter.append("B")
+            if state=="11000":
+                letter.append("F")
+            if state=="11110":
+                letter.append("I")
+            if state=="00100":
+                letter.append("P")
+            if state=="01000":
+                letter.append("Q")
+            if state=="10001":
+                letter.append("W")
+            if state=="01110":
+                letter.append("Y")
+            
+            
+            #def letters with multiple conditions
+            
+            if state=="11111":
+                #if thumb above fingers
+                if handList[thumb_Coord[0]][1]<handList[finger_Coord[3][0]][1]:
+                    if (handList[finger_Coord[0][0]][0]-handList[thumb_Coord[0]][0])>15 and (handList[finger_Coord[0][0]][0]-handList[thumb_Coord[0]][0])<30:
+                        letter.append("T")
+                    elif (handList[finger_Coord[1][0]][0]-handList[thumb_Coord[0]][0])>0 and (handList[finger_Coord[1][0]][0]-handList[thumb_Coord[0]][0])<25:
+                        letter.append("N")
+                    elif (handList[finger_Coord[1][0]][0]-handList[thumb_Coord[0]][0])>30:
+                        letter.append("M")
+                    elif (handList[finger_Coord[2][0]][0]-handList[thumb_Coord[0]][0])<0:
+                        letter.append("S")
+                #if thumb below fingers
+                elif handList[thumb_Coord[0]][1]>handList[finger_Coord[3][0]][1]:
+                    letter.append("E")
+                    
+            if state=="10011":
+                if substate=="GDCC":
+                    letter.append("V")
+                elif handList[finger_Coord[0][0]][0]<handList[finger_Coord[1][0]][0]:
+                    letter.append("R")
+                else:
+                    letter.append("U")
+            
+            if state=="00111":
+                if substate=="GCCC":
+                    letter.append("G")
+                else:
+                    letter.append("L")
+                    
+            if state=="00011":
+                if substate=="GGCC":
+                    letter.append("H")
+                else:
+                    letter.append("K")
+             
+            if state=="10111":
+                if (handList[finger_Coord[0][1]][1]-handList[finger_Coord[0][0]][1])<=50:
+                    letter.append("X")
+                else:
+                    letter.append("D")
+                
+            if state=="01111":
+                if (handList[thumb_Coord[0]][0]-handList[finger_Coord[3][0]][0])>=100:
+                    letter.append("A")
+                elif (handList[thumb_Coord[0]][1]-handList[finger_Coord[3][0]][1])<=35:
+                    letter.append("O")
+                else:
+                    letter.append("C")
+            
+            #add letters into displayed list
+            FiveLastAdd(letter,word)
+            
+            #letters with movements
+
+        #display letters
+        for elem in word:
+            cv2.putText(image, ' '.join(word), (0,50), cv2.FONT_HERSHEY_PLAIN, 3, (0,255,0), 3)
+
+    imS = cv2.resize(image, (800, 600))
+    cv2.imshow("Sign Language interpreation", imS)
+    
+    #to quit and close window
+    if cv2.waitKey(1)==ord("q"):
+        break      
+cv2.destroyAllWindows()
