@@ -104,7 +104,7 @@ while True:
                 letter.append("F")
             if state=="11110":
                 letter.append("I")
-            if state=="00100":
+            if state=="01100":
                 letter.append("P")
             if state=="01000":
                 letter.append("Q")
